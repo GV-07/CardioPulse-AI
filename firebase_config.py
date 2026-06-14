@@ -1,15 +1,23 @@
 # firebase_config.py
 import firebase_admin
 from firebase_admin import credentials, firestore
+import json
 import os
+import streamlit as st
 
 # Securely initialize the Firebase application instance
 if not firebase_admin._apps:
-    if os.path.exists("firebase_credentials.json"):
+    # 1. First, check if running in the cloud using Streamlit Secrets
+    if "json_credentials" in st.secrets:
+        cred_json = json.loads(st.secrets["json_credentials"])
+        cred = credentials.Certificate(cred_json)
+        firebase_admin.initialize_app(cred)
+    # 2. Fallback to local file look-up if running on your PC
+    elif os.path.exists("firebase_credentials.json"):
         cred = credentials.Certificate("firebase_credentials.json")
         firebase_admin.initialize_app(cred)
     else:
-        raise FileNotFoundError("CRITICAL ERROR: 'firebase_credentials.json' missing in root directory.")
+        raise FileNotFoundError("CRITICAL ERROR: Firebase configuration credentials not found.")
 
 db = firestore.client()
 
